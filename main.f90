@@ -37,10 +37,16 @@ program bem
     implicit none
 
     INTEGER(int32) :: i,info
-    real(real64),ALLOCATABLE :: A(:,:), b(:,:), x(:,:)
+    REAL(real64),ALLOCATABLE :: A(:,:), b(:,:), x(:,:)
+    INTEGER(int32),PARAMETER :: DIV_NUM = 100
+    REAL(real64),ALLOCATABLE :: points(:)
+
+
+    ALLOCATE(points(DIV_NUM))
+
     ALLOCATE(A, source=reshape([ 2.0d0, 4.0d0, 6.0d0, 3.0d0, -5.0d0, -7.0d0, 1.0d0, -1.0d0, 1.0d0 ], [3,3]))
     ALLOCATE(b, source=reshape([7.0d0, 3.0d0, 5.0d0], [3,1]))
-    
+
     do i = 1, 3
         print *,"[",i,"1 ",i,"2 ",i,"3 ] = ",A(i,:)
     end do
