@@ -29,6 +29,7 @@ contains
         endif
     end subroutine
 
+
 end module subprogram
 
 program bem
@@ -38,11 +39,19 @@ program bem
 
     INTEGER(int32) :: i,info
     REAL(real64),ALLOCATABLE :: A(:,:), b(:,:), x(:,:)
-    INTEGER(int32),PARAMETER :: DIV_NUM = 100
-    REAL(real64),ALLOCATABLE :: points(:)
+    INTEGER(int32),PARAMETER :: DIV_NUM = 50
+    REAL(real64),PARAMETER :: PI = acos(-1.0_real64)
+    REAL(real64),ALLOCATABLE :: points(:,:)
 
 
-    ALLOCATE(points(DIV_NUM))
+    ALLOCATE(points(DIV_NUM,2))
+    do i = 1, DIV_NUM
+        points(i,1) = cos(2*i*PI/DIV_NUM)
+        points(i,2) = sin(2*i*PI/DIV_NUM)
+    end do
+    do i = 1, DIV_NUM
+        print *,"x : ", points(i,1), ", y : ", points(i,2)
+    end do
 
     ALLOCATE(A, source=reshape([ 2.0d0, 4.0d0, 6.0d0, 3.0d0, -5.0d0, -7.0d0, 1.0d0, -1.0d0, 1.0d0 ], [3,3]))
     ALLOCATE(b, source=reshape([7.0d0, 3.0d0, 5.0d0], [3,1]))
