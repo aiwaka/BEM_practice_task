@@ -33,6 +33,7 @@ contains
     end subroutine
 
     function fund_gamma(x,y) result(retval)
+        ! 任意の二点に対する基本解の値を返す
         implicit none
         REAL(real64) :: x(2),y(2)
         REAL(real64) :: retval
@@ -47,7 +48,7 @@ contains
         REAL(real64) :: points(:,:)
         REAL(real64) :: x(2),x1(2),x2(2)
         REAL(real64) :: retval
-        REAL(real64) :: t_vec(2),n_vec(2)
+        REAL(real64) :: tVec(2),nVec(2)
         REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2
         REAL(real64) :: h,theta
 
@@ -60,7 +61,10 @@ contains
         ! n番目の区間の端点
         x1(:) = points(modulo(n-1,points_num)+1,:)
         x2(:) = points(modulo(n,points_num)+1,:)
-        print *,"m=",m,",n=",n,",x(:):",x(:)
+        print *,"m=",m,",n=",n
+        print *,"x:",x(:)
+        print *,"x1:",x1(:)
+        print *,"x2:",x2(:)
 
         ! 概ね小林本の表式に合わせ, XやYを導入している.
         h = sqrt(dot_product(x1-x2,x1-x2))  ! 区間の長さ
@@ -70,14 +74,15 @@ contains
             return
         end if
 
-        t_vec(1:2) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
-        n_vec(1:2) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
-        lX1 = dot_product(x-x1,t_vec)
-        lX2 = dot_product(x-x2,t_vec)
+        tVec(:) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
+        nVec(:) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
+
+        lX1 = dot_product(x-x1,tVec)
+        lX2 = dot_product(x-x2,tVec)
         r1 = sqrt(dot_product(x-x1,x-x1))
         r2 = sqrt(dot_product(x-x2,x-x2))
-        lY1 = dot_product(x-x1,n_vec)
-        lY2 = dot_product(x-x2,n_vec)
+        lY1 = dot_product(x-x1,nVec)
+        lY2 = dot_product(x-x2,nVec)
         theta = atan2(lY2,lX2) - atan2(lY1,lX1)
 
         retval = (lX2*log(r2)-lX1*log(r1)+h-lY1*theta)/2/PI
@@ -104,13 +109,15 @@ program bem
 
     ALLOCATE(points(DIV_NUM,2))
     do i = 1, DIV_NUM
-        points(i,1) = cos(2*i*PI/DIV_NUM)
-        points(i,2) = sin(2*i*PI/DIV_NUM)
+        points(i,1) = cos(2*(i-1)*PI/DIV_NUM)
+        points(i,2) = sin(2*(i-1)*PI/DIV_NUM)
     end do
     do i = 1, DIV_NUM
         print *,i,";",points(i,:)
     end do
-    
+
+    ALLOCATE(A(DIV_NUM,DIV_NUM))
+
     do m = 1, DIV_NUM
         do n = 1, DIV_NUM
             A(m,n) = U_component(m,n,points)
@@ -120,6 +127,7 @@ program bem
     ! Ax=bを解くのを試したときのもの
     ! ALLOCATE(A, source=reshape([ 2.0d0, 4.0d0, 6.0d0, 3.0d0, -5.0d0, -7.0d0, 1.0d0, -1.0d0, 1.0d0 ], [3,3]))
     ! ALLOCATE(b, source=reshape([7.0d0, 3.0d0, 5.0d0], [3,1]))
+    return
 
     call solve(A,b,x,info)
     if (info == 0) then
