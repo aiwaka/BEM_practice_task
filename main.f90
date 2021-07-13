@@ -62,7 +62,7 @@ contains
         REAL(real64) :: x(2),y(2)
         REAL(real64) :: retval
         
-        retval = -log(sqrt(dot_product(x-y,x-y)))/2/PI
+        retval = -log(sqrt(dot_product(x-y,x-y)))/2.0d0/PI
     end function fund_gamma
 
     function U_component(m,n,points) result(retval)
@@ -80,7 +80,7 @@ contains
 
         ! moduloを用いて周期的に添え字を扱って配列外参照が起きないようにする
         ! m番目の区間の中点
-        x(:) = (points(modulo(m-1,points_num)+1,:) + points(modulo(m,points_num)+1,:))/2
+        x(:) = (points(modulo(m-1,points_num)+1,:) + points(modulo(m,points_num)+1,:))/2.0d0
         ! n番目の区間の端点
         x1(:) = points(modulo(n-1,points_num)+1,:)
         x2(:) = points(modulo(n,points_num)+1,:)
@@ -89,7 +89,7 @@ contains
         h = sqrt(dot_product(x1-x2,x1-x2))  ! 区間の長さ
         if ( m == n ) then
             ! m=nの場合は例外的な計算
-            retval = (1-log(h/2))*h/2/PI
+            retval = (1-log(h/2.0d0))*h/2.0d0/PI
             return
         end if
 
@@ -104,7 +104,7 @@ contains
         lY2 = dot_product(x-x2,n_vec)
         theta = atan2(lY2,lX2) - atan2(lY1,lX1)
 
-        retval = (lX2*log(r2)-lX1*log(r1)+h-lY1*theta)/2/PI
+        retval = (lX2*log(r2)-lX1*log(r1)+h-lY1*theta)/2.0d0/PI
     end function U_component
 
     function W_component(m,n,points) result(retval)
@@ -119,7 +119,7 @@ contains
 
         points_num = size(points,1)
 
-        x(:) = (points(modulo(m-1,points_num)+1,:) + points(modulo(m,points_num)+1,:))/2
+        x(:) = (points(modulo(m-1,points_num)+1,:) + points(modulo(m,points_num)+1,:))/2.0d0
         x1(:) = points(modulo(n-1,points_num)+1,:)
         x2(:) = points(modulo(n,points_num)+1,:)
 
@@ -140,7 +140,7 @@ contains
         lY2 = dot_product(x-x2,n_vec)
         theta = atan2(lY2,lX2) - atan2(lY1,lX1)
 
-        retval = theta/2/PI
+        retval = theta/2.0d0/PI
     end function W_component
 
 end module subprogram
@@ -169,8 +169,8 @@ program bem
 
     ! 円周上の点を用意する
     do i = 1, DIV_NUM
-        points(i,1) = cos(2*(i-1)*PI/DIV_NUM)
-        points(i,2) = sin(2*(i-1)*PI/DIV_NUM)
+        points(i,1) = cos(2.0d0*(i-1)*PI/DIV_NUM)
+        points(i,2) = sin(2.0d0*(i-1)*PI/DIV_NUM)
     end do
 
     ! 行列の各要素を計算
@@ -179,8 +179,8 @@ program bem
             lU(m,n) = U_component(m,n,points)
             lW(m,n) = W_component(m,n,points)
         end do
-        u(m,1) = exact_u((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2)
-        exact_q(m,1) = exact_u_norm_drv((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2)
+        u(m,1) = exact_u((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2.0d0)
+        exact_q(m,1) = exact_u_norm_drv((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2.0d0)
     end do
     do m = 1, DIV_NUM
         print *,u(m,1)
