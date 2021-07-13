@@ -6,27 +6,31 @@ module subprogram
 
 contains
     subroutine solve(A,b,x,info)
+        ! Ax=bの方程式を解き, xに結果を代入し, infoにステータスを保存する.
         real(real64),INTENT(IN) :: A(:,:), b(:,:)
         real(real64),ALLOCATABLE,INTENT(INOUT) :: x(:,:)
         integer(int32),INTENT(OUT) :: info
         INTEGER, ALLOCATABLE :: ipiv(:)
         INTEGER :: an, am, bn, bm
+        ! Aが正方であるかチェック
         an = size(A,1)
         am = size(A,2)
         if (an /= am) then
             print *,'Error : solve (an not equal to am) : an=',an,", am=",am
             return
         endif
+        ! 基本的にbmは1であることを想定する.
         bn = size(b,1)
         bm = size(b,2)
-        if (allocated(x)) then
-            DEALLOCATE(x)
-        end if
+
+        if (allocated(x)) DEALLOCATE(x)
         ALLOCATE(x,source=b)
+        ! ピボット行列（入れ替えた結果を保存する行列. Aと同サイズの一次元配列とする）
         ALLOCATE(ipiv(an))
         
-        call dgesv(an, bm, A, an, ipiv, x, bn, info)  ! bmは1を想定（bは普通の配列）
+        call dgesv(an, bm, A, an, ipiv, x, bn, info)  ! lapackのサブルーチンを呼び出して解く.
         if (info /= 0) then
+            ! infoが0でなければbad statusなのでその旨を表示する
             WRITE(*,*) 'Error : solve : info=', info
             RETURN
         endif
@@ -37,7 +41,7 @@ contains
         implicit none
         REAL(real64) :: x(2)
         REAL(real64) :: retval
-        
+
         retval = x(1)**3 - 3*x(1)*x(2)*x(2)
     end function exact_u
 
@@ -68,7 +72,7 @@ contains
         REAL(real64) :: points(:,:)
         REAL(real64) :: x(2),x1(2),x2(2)
         REAL(real64) :: retval
-        REAL(real64) :: tVec(2),nVec(2)
+        REAL(real64) :: t_vec(2),n_vec(2)
         REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2, h, theta
 
         ! pointsのサイズを保存
@@ -89,27 +93,28 @@ contains
             return
         end if
 
-        tVec(:) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
-        nVec(:) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
+        t_vec(:) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
+        n_vec(:) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
 
-        lX1 = dot_product(x-x1,tVec)
-        lX2 = dot_product(x-x2,tVec)
+        lX1 = dot_product(x-x1,t_vec)
+        lX2 = dot_product(x-x2,t_vec)
         r1 = sqrt(dot_product(x-x1,x-x1))
         r2 = sqrt(dot_product(x-x2,x-x2))
-        lY1 = dot_product(x-x1,nVec)
-        lY2 = dot_product(x-x2,nVec)
+        lY1 = dot_product(x-x1,n_vec)
+        lY2 = dot_product(x-x2,n_vec)
         theta = atan2(lY2,lX2) - atan2(lY1,lX1)
 
         retval = (lX2*log(r2)-lX1*log(r1)+h-lY1*theta)/2/PI
     end function U_component
 
     function W_component(m,n,points) result(retval)
+        ! 基本解の法線微分の値を計算する.
         implicit none
         INTEGER(int32) :: m,n,points_num
         REAL(real64) :: points(:,:)
         REAL(real64) :: x(2),x1(2),x2(2)
         REAL(real64) :: retval
-        REAL(real64) :: tVec(2),nVec(2)
+        REAL(real64) :: t_vec(2),n_vec(2)
         REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2, h, theta
 
         points_num = size(points,1)
@@ -124,20 +129,18 @@ contains
         end if
         h = sqrt(dot_product(x1-x2,x1-x2))  ! 区間の長さ
 
-        tVec(:) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
-        nVec(:) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
+        t_vec(:) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
+        n_vec(:) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
 
-        lX1 = dot_product(x-x1,tVec)
-        lX2 = dot_product(x-x2,tVec)
+        lX1 = dot_product(x-x1,t_vec)
+        lX2 = dot_product(x-x2,t_vec)
         r1 = sqrt(dot_product(x-x1,x-x1))
         r2 = sqrt(dot_product(x-x2,x-x2))
-        lY1 = dot_product(x-x1,nVec)
-        lY2 = dot_product(x-x2,nVec)
+        lY1 = dot_product(x-x1,n_vec)
+        lY2 = dot_product(x-x2,n_vec)
         theta = atan2(lY2,lX2) - atan2(lY1,lX1)
 
         retval = theta/2/PI
-
-        
     end function W_component
 
 end module subprogram
@@ -151,6 +154,7 @@ program bem
     INTEGER(int32) :: DIV_NUM
     REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:), exact_q(:,:), points(:,:)
 
+    ! 分割サイズを入力
     print *,"input DIV_NUM : "
     READ (*,*) DIV_NUM
     if ( DIV_NUM <= 0 ) return
@@ -185,6 +189,8 @@ program bem
 
     call solve(lU,matmul(lW,u),q,info)
     if (info == 0) then
+        print *,"calc  q:",q(:,1)
+        print *,"exact q:",exact_q(:,1)
         print *,"Err about q :",q(:,1)-exact_q(:,1)
     endif
     stop
