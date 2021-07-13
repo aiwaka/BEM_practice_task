@@ -148,16 +148,12 @@ program bem
     implicit none
 
     INTEGER(int32) :: i,m,n,info
-    REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:)
-    REAL(real64),ALLOCATABLE :: exact_q(:,:)
     INTEGER(int32) :: DIV_NUM
-    REAL(real64),ALLOCATABLE :: points(:,:)
+    REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:), exact_q(:,:), points(:,:)
 
     print *,"input DIV_NUM : "
     READ (*,*) DIV_NUM
-    if ( DIV_NUM <= 0 ) then
-        return
-    end if
+    if ( DIV_NUM <= 0 ) return
 
     ! 割り付け
     ALLOCATE(points(DIV_NUM,2))
@@ -180,12 +176,14 @@ program bem
             lW(m,n) = W_component(m,n,points)
         end do
         u(m,1) = exact_u((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2)
-        print *,u(m,1)
         exact_q(m,1) = exact_u_norm_drv((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2)
+    end do
+    do m = 1, DIV_NUM
+        print *,u(m,1)
+        print *,exact_q(m,1)
     end do
 
     call solve(lU,matmul(lW,u),q,info)
-    print *,"info=",info
     if (info == 0) then
         print *,"Err about q :",q(:,1)-exact_q(:,1)
     endif
