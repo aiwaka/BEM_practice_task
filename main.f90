@@ -42,7 +42,7 @@ contains
         REAL(real64) :: x(2)
         REAL(real64) :: retval
 
-        retval = x(1)**3 - 3*x(1)*x(2)*x(2)
+        retval = x(1)**3 - 3*x(1)*x(2)**2
     end function exact_u
 
     function exact_u_norm_drv(x) result(retval)
@@ -53,7 +53,7 @@ contains
         REAL(real64) :: theta
 
         theta = atan2(x(2),x(1))
-        retval = (3*x(1)*x(1) - 3*x(2)*x(2))*cos(theta) + 6*x(1)*x(2)*sin(theta)
+        retval = (3*x(1)**2 - 3*x(2)**2)*cos(theta) + 6*x(1)*x(2)*sin(theta)
     end function exact_u_norm_drv
 
     function fund_gamma(x,y) result(retval)
@@ -183,8 +183,9 @@ program bem
         exact_q(m,1) = exact_u_norm_drv((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2.0d0)
     end do
     do m = 1, DIV_NUM
+        print *,(points(modulo(m-1,DIV_NUM)+1,:) + points(modulo(m,DIV_NUM)+1,:))/2.0d0
         print *,u(m,1)
-        print *,exact_q(m,1)
+        ! print *,exact_q(m,1)
     end do
 
     call solve(lU,matmul(lW,u),q,info)
