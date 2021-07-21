@@ -10,8 +10,8 @@ contains
         real(real64),INTENT(IN) :: A(:,:), b(:,:)
         real(real64),ALLOCATABLE,INTENT(INOUT) :: x(:,:)
         integer(int32),INTENT(OUT) :: info
-        INTEGER, ALLOCATABLE :: ipiv(:)
-        INTEGER :: an, am, bn, bm
+        INTEGER(int32), ALLOCATABLE :: ipiv(:)
+        INTEGER(int32) :: an, am, bn, bm
         ! Aが正方であるかチェック
         an = size(A,1)
         am = size(A,2)
@@ -98,15 +98,14 @@ contains
         retval = dot_product(x-y,[cos(theta),sin(theta)])/2.0d0/PI/dot_product(x-y,x-y)
     end function fund_gamma_derivative
 
-    function U_component(m,n,edge_points) result(retval)
-        ! 任意の点xと区間端点x1,x2を入力すると基本解の値を返す
+    subroutine component_values(m, n, edge_points, lX1, lX2, lY1, lY2, r1, r2, h, theta)
         implicit none
-        INTEGER(int32) :: m,n,points_num
-        REAL(real64) :: edge_points(:,:)
+        INTEGER(int32),intent(in) :: m, n
+        REAL(real64),intent(in) :: edge_points(:,:)
+        REAL(real64),intent(out) :: lX1, lX2, lY1, lY2, r1, r2, h, theta
+        INTEGER(int32) :: points_num
         REAL(real64) :: x(2),x1(2),x2(2)
-        REAL(real64) :: retval
         REAL(real64) :: t_vec(2),n_vec(2)
-        REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2, h, theta
 
         ! pointsのサイズを保存
         points_num = size(edge_points,1)
@@ -120,11 +119,6 @@ contains
 
         ! 概ね小林本の表式に合わせ, XやYを導入している.
         h = sqrt(dot_product(x1-x2,x1-x2))  ! 区間の長さ
-        if ( m == n ) then
-            ! m=nの場合は例外的な計算
-            retval = (1-log(h/2.0d0))*h/2.0d0/PI
-            return
-        end if
 
         t_vec(:) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
         n_vec(:) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
@@ -136,6 +130,22 @@ contains
         lY1 = dot_product(x-x1,n_vec)
         lY2 = dot_product(x-x2,n_vec)
         theta = atan2(lY2,lX2) - atan2(lY1,lX1)
+    end subroutine component_values
+
+    function U_component(m,n,edge_points) result(retval)
+        ! 任意の点xと区間端点x1,x2を入力すると基本解の値を返す
+        implicit none
+        INTEGER(int32) :: m,n
+        REAL(real64) :: edge_points(:,:)
+        REAL(real64) :: retval
+        REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2, h, theta
+
+        call component_values(m,n,edge_points,lX1,lX2,lY1,lY2,r1,r2,h,theta)
+        if ( m == n ) then
+            ! m=nの場合は例外的な計算
+            retval = (1-log(h/2.0d0))*h/2.0d0/PI
+            return
+        end if
 
         retval = (lX2*log(r2)-lX1*log(r1)+h-lY1*theta)/2.0d0/PI
     end function U_component
@@ -143,35 +153,16 @@ contains
     function W_component(m,n,edge_points) result(retval)
         ! 基本解の法線微分の値を計算する.
         implicit none
-        INTEGER(int32) :: m,n,points_num
+        INTEGER(int32) :: m,n
         REAL(real64) :: edge_points(:,:)
-        REAL(real64) :: x(2),x1(2),x2(2)
         REAL(real64) :: retval
-        REAL(real64) :: t_vec(2),n_vec(2)
         REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2, h, theta
-
-        points_num = size(edge_points,1)
-
-        x(:) = (edge_points(modulo(m-1,points_num)+1,:) + edge_points(modulo(m,points_num)+1,:))/2.0d0
-        x1(:) = edge_points(modulo(n-1,points_num)+1,:)
-        x2(:) = edge_points(modulo(n,points_num)+1,:)
 
         if ( m == n ) then
             retval = 0.5d0
             return
         end if
-        h = sqrt(dot_product(x1-x2,x1-x2))  ! 区間の長さ
-
-        t_vec(:) = [(x2(1)-x1(1))/h, (x2(2)-x1(2))/h]
-        n_vec(:) = [(x1(2)-x2(2))/h, (x2(1)-x1(1))/h]
-
-        lX1 = dot_product(x-x1,t_vec)
-        lX2 = dot_product(x-x2,t_vec)
-        r1 = sqrt(dot_product(x-x1,x-x1))
-        r2 = sqrt(dot_product(x-x2,x-x2))
-        lY1 = dot_product(x-x1,n_vec)
-        lY2 = dot_product(x-x2,n_vec)
-        theta = atan2(lY2,lX2) - atan2(lY1,lX1)
+        call component_values(m,n,edge_points,lX1,lX2,lY1,lY2,r1,r2,h,theta)
 
         retval = theta/2.0d0/PI
     end function W_component
