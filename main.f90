@@ -53,7 +53,7 @@ contains
         REAL(real64) :: theta
 
         theta = atan2(x(2),x(1))
-        retval = 3*(x(1)**2 - x(2)**2)*cos(theta) + 6*x(1)*x(2)*sin(theta)
+        retval = 3*(x(1)**2 - x(2)**2)*cos(theta) - 6*x(1)*x(2)*sin(theta)
     end function exact_u_normal_drv
 
     function fund_gamma(x,y) result(retval)
