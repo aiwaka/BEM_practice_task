@@ -36,26 +36,30 @@ contains
         endif
     end subroutine
 
-    function integral_trapezoidal(x, points, q_array) result(retval)
+    function integral_trapezoidal(x, points, q_array, u_array) result(retval)
+        ! 台形公式を用いて周回積分を行う.
+        ! 添字1とN+1の点が一致していることを利用して,
+        ! すべての点を一回ずつ足してh/2をかける代わりにhをかけることにする.
         implicit none
-        REAL(real64) :: x(2), points(:,:), q_array(:,:)
+        REAL(real64) :: x(2), points(:,:), q_array(:,:), u_array(:,:)
         REAL(real64) :: h
         REAL(real64) :: retval
-        INTEGER(int32) :: points_num, i, cyclic_num
+        INTEGER(int32) :: points_num, i
 
         retval = 0.0d0
         points_num = size(points,1)
         h = 2.0d0*PI/real(points_num,real64)
-        do i = 1, points_num+1
-            cyclic_num = modulo(i-1, points_num) + 1
-            retval = retval + fund_gamma(x,points(cyclic_num,:))*q_array(cyclic_num,1)
+        do i = 1, points_num
+            ! 一重層ポテンシャル
+            retval = retval + fund_gamma(x,points(i,:))*q_array(i,1)
+            ! 二重層ポテンシャル
+            retval = retval - fund_gamma_derivative(x,points(i,:))*u_array(i,1)
         end do
-        retval = retval*h/2.0d0
-        
+        retval = retval*h
     end function integral_trapezoidal
 
     function exact_u(x) result(retval)
-        ! x^3 - 3xy^2
+        ! 与えられた点に対してx^3 - 3xy^2の厳密な値を計算する.
         implicit none
         REAL(real64) :: x(2)
         REAL(real64) :: retval
@@ -64,7 +68,8 @@ contains
     end function exact_u
 
     function exact_u_normal_drv(x) result(retval)
-        ! 半径1の単位円の領域とする
+        ! 半径1の単位円の領域とする.
+        ! 与えられた点に対してx^3-3xy^2の法線微分を計算する.
         implicit none
         REAL(real64) :: x(2)
         REAL(real64) :: retval
@@ -75,13 +80,23 @@ contains
     end function exact_u_normal_drv
 
     function fund_gamma(x,y) result(retval)
-        ! 任意の二点に対する基本解の値を返す
+        ! 任意の二点に対する（二次元）基本解の値を返す.
         implicit none
         REAL(real64) :: x(2),y(2)
         REAL(real64) :: retval
 
         retval = -log(sqrt(dot_product(x-y,x-y)))/2.0d0/PI
     end function fund_gamma
+
+    function fund_gamma_derivative(x,y) result(retval)
+        ! 任意の二点（ただしyは境界上）に対する基本解のyについての法線微分を返す.
+        implicit none
+        REAL(real64) :: x(2),y(2),theta
+        REAL(real64) :: retval
+
+        theta = atan2(y(2),y(1))
+        retval = dot_product(x-y,[cos(theta),sin(theta)])/2.0d0/PI/dot_product(x-y,x-y)
+    end function fund_gamma_derivative
 
     function U_component(m,n,edge_points) result(retval)
         ! 任意の点xと区間端点x1,x2を入力すると基本解の値を返す
@@ -179,7 +194,8 @@ program bem
     READ (*,*) DIV_NUM
     if ( DIV_NUM <= 0 ) return
     ! 値を求める点を入力
-    inner_point(:) = [0.5d0,0.5d0]
+    print *,"input two number (divide by space)"
+    READ(*,*) inner_point
     if ( dot_product(inner_point(:),inner_point(:)) >= 1.0d0 ) then
         print *,"your point is out of domain."
         stop
@@ -218,13 +234,13 @@ program bem
     ! 求めた行列を用いて共役な法線微分（q）を計算.
     call solve(lU,matmul(lW,u),q,info)
     if (info == 0) then
-        print *,"sum of error about q :",sum(q(:,1)-exact_q(:,1))
+        print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
     endif
 
     ! 台形公式で内点の値を計算
-    result_value = integral_trapezoidal(inner_point, points, q)
+    result_value = integral_trapezoidal(inner_point, points, q, u)
 
     print *,"at (", inner_point(1),",",inner_point(2),"), result : ",result_value
-    print *,"exact value is ",exact_u(inner_point(:))
+    print *,"exact value is ",exact_u(inner_point(:))," ... error is ",exact_u(inner_point(:))-result_value
 
 end program bem
