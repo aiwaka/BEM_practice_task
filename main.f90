@@ -188,11 +188,6 @@ program bem
         ! 確認のため厳密なqも計算する.
         exact_q(m,1) = exact_u_normal_drv(points(m,:))
     end do
-    do m = 1, DIV_NUM
-        print *,points(m,:)
-        print *,u(m,1)
-        ! print *,exact_q(m,1)
-    end do
 
     call solve(lU,matmul(lW,u),q,info)
     if (info == 0) then
