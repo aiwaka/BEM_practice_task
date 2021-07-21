@@ -27,7 +27,7 @@ contains
         ALLOCATE(x,source=b)
         ! ピボット行列（入れ替えた結果を保存する行列. Aと同サイズの一次元配列とする）
         ALLOCATE(ipiv(an))
-        
+
         call dgesv(an, bm, A, an, ipiv, x, bn, info)  ! lapackのサブルーチンを呼び出して解く.
         if (info /= 0) then
             ! infoが0でなければbad statusなのでその旨を表示する
@@ -45,45 +45,45 @@ contains
         retval = x(1)**3 - 3*x(1)*x(2)**2
     end function exact_u
 
-    function exact_u_norm_drv(x) result(retval)
-        ! 半径1の単位円領域とする
+    function exact_u_normal_drv(x) result(retval)
+        ! 半径1の単位円の領域とする
         implicit none
         REAL(real64) :: x(2)
         REAL(real64) :: retval
         REAL(real64) :: theta
 
         theta = atan2(x(2),x(1))
-        retval = (3*x(1)**2 - 3*x(2)**2)*cos(theta) + 6*x(1)*x(2)*sin(theta)
-    end function exact_u_norm_drv
+        retval = 3*(x(1)**2 - x(2)**2)*cos(theta) + 6*x(1)*x(2)*sin(theta)
+    end function exact_u_normal_drv
 
     function fund_gamma(x,y) result(retval)
         ! 任意の二点に対する基本解の値を返す
         implicit none
         REAL(real64) :: x(2),y(2)
         REAL(real64) :: retval
-        
+
         retval = -log(sqrt(dot_product(x-y,x-y)))/2.0d0/PI
     end function fund_gamma
 
-    function U_component(m,n,points) result(retval)
+    function U_component(m,n,edge_points) result(retval)
         ! 任意の点xと区間端点x1,x2を入力すると基本解の値を返す
         implicit none
         INTEGER(int32) :: m,n,points_num
-        REAL(real64) :: points(:,:)
+        REAL(real64) :: edge_points(:,:)
         REAL(real64) :: x(2),x1(2),x2(2)
         REAL(real64) :: retval
         REAL(real64) :: t_vec(2),n_vec(2)
         REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2, h, theta
 
         ! pointsのサイズを保存
-        points_num = size(points,1)
+        points_num = size(edge_points,1)
 
         ! moduloを用いて周期的に添え字を扱って配列外参照が起きないようにする
         ! m番目の区間の中点
-        x(:) = (points(modulo(m-1,points_num)+1,:) + points(modulo(m,points_num)+1,:))/2.0d0
+        x(:) = (edge_points(modulo(m-1,points_num)+1,:) + edge_points(modulo(m,points_num)+1,:))/2.0d0
         ! n番目の区間の端点
-        x1(:) = points(modulo(n-1,points_num)+1,:)
-        x2(:) = points(modulo(n,points_num)+1,:)
+        x1(:) = edge_points(modulo(n-1,points_num)+1,:)
+        x2(:) = edge_points(modulo(n,points_num)+1,:)
 
         ! 概ね小林本の表式に合わせ, XやYを導入している.
         h = sqrt(dot_product(x1-x2,x1-x2))  ! 区間の長さ
@@ -107,21 +107,21 @@ contains
         retval = (lX2*log(r2)-lX1*log(r1)+h-lY1*theta)/2.0d0/PI
     end function U_component
 
-    function W_component(m,n,points) result(retval)
+    function W_component(m,n,edge_points) result(retval)
         ! 基本解の法線微分の値を計算する.
         implicit none
         INTEGER(int32) :: m,n,points_num
-        REAL(real64) :: points(:,:)
+        REAL(real64) :: edge_points(:,:)
         REAL(real64) :: x(2),x1(2),x2(2)
         REAL(real64) :: retval
         REAL(real64) :: t_vec(2),n_vec(2)
         REAL(real64) :: lX1,lX2,lY1,lY2,r1,r2, h, theta
 
-        points_num = size(points,1)
+        points_num = size(edge_points,1)
 
-        x(:) = (points(modulo(m-1,points_num)+1,:) + points(modulo(m,points_num)+1,:))/2.0d0
-        x1(:) = points(modulo(n-1,points_num)+1,:)
-        x2(:) = points(modulo(n,points_num)+1,:)
+        x(:) = (edge_points(modulo(m-1,points_num)+1,:) + edge_points(modulo(m,points_num)+1,:))/2.0d0
+        x1(:) = edge_points(modulo(n-1,points_num)+1,:)
+        x2(:) = edge_points(modulo(n,points_num)+1,:)
 
         if ( m == n ) then
             retval = 0.5d0
@@ -152,7 +152,7 @@ program bem
 
     INTEGER(int32) :: i,m,n,info
     INTEGER(int32) :: DIV_NUM
-    REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:), exact_q(:,:), points(:,:)
+    REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:), exact_q(:,:), edge_points(:,:),points(:,:)
 
     ! 分割サイズを入力
     print *,"input DIV_NUM : "
@@ -160,6 +160,7 @@ program bem
     if ( DIV_NUM <= 0 ) return
 
     ! 割り付け
+    ALLOCATE(edge_points(DIV_NUM,2))
     ALLOCATE(points(DIV_NUM,2))
     ALLOCATE(lU(DIV_NUM,DIV_NUM))
     ALLOCATE(lW(DIV_NUM,DIV_NUM))
@@ -167,23 +168,28 @@ program bem
     ALLOCATE(exact_q(DIV_NUM,1))
     ALLOCATE(u(DIV_NUM,1))
 
-    ! 円周上の点を用意する
+    ! 円周上の点を用意する. (1,0)から始めて一周する. これは端点で, 代表点はそれぞれの中点とする.
     do i = 1, DIV_NUM
-        points(i,1) = cos(2.0d0*(i-1)*PI/DIV_NUM)
-        points(i,2) = sin(2.0d0*(i-1)*PI/DIV_NUM)
+        edge_points(i,1) = cos(2.0d0*(i-1)*PI/DIV_NUM)
+        edge_points(i,2) = sin(2.0d0*(i-1)*PI/DIV_NUM)
+    end do
+    ! 代表点
+    do i = 1, DIV_NUM
+        points(i,:) = (edge_points(i,:) + edge_points(modulo(i,DIV_NUM)+1,:))/2.0d0
     end do
 
     ! 行列の各要素を計算
     do m = 1, DIV_NUM
         do n = 1, DIV_NUM
-            lU(m,n) = U_component(m,n,points)
-            lW(m,n) = W_component(m,n,points)
+            lU(m,n) = U_component(m,n,edge_points)
+            lW(m,n) = W_component(m,n,edge_points)
         end do
-        u(m,1) = exact_u((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2.0d0)
-        exact_q(m,1) = exact_u_norm_drv((points(m,:) + points(modulo(m,DIV_NUM)+1,:))/2.0d0)
+        u(m,1) = exact_u(points(m,:))
+        ! 確認のため厳密なqも計算する.
+        exact_q(m,1) = exact_u_normal_drv(points(m,:))
     end do
     do m = 1, DIV_NUM
-        print *,(points(modulo(m-1,DIV_NUM)+1,:) + points(modulo(m,DIV_NUM)+1,:))/2.0d0
+        print *,points(m,:)
         print *,u(m,1)
         ! print *,exact_q(m,1)
     end do
@@ -194,5 +200,4 @@ program bem
         print *,"exact q:",exact_q(:,1)
         print *,"Err about q :",q(:,1)-exact_q(:,1)
     endif
-    stop
 end program bem
