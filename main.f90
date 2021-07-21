@@ -36,6 +36,24 @@ contains
         endif
     end subroutine
 
+    function integral_trapezoidal(x, points, q_array) result(retval)
+        implicit none
+        REAL(real64) :: x(2), points(:,:), q_array(:,:)
+        REAL(real64) :: h
+        REAL(real64) :: retval
+        INTEGER(int32) :: points_num, i, cyclic_num
+
+        retval = 0.0d0
+        points_num = size(points,1)
+        h = 2.0d0*PI/real(points_num,real64)
+        do i = 1, points_num+1
+            cyclic_num = modulo(i-1, points_num) + 1
+            retval = retval + fund_gamma(x,points(cyclic_num,:))*q_array(cyclic_num,1)
+        end do
+        retval = retval*h/2.0d0
+        
+    end function integral_trapezoidal
+
     function exact_u(x) result(retval)
         ! x^3 - 3xy^2
         implicit none
@@ -153,11 +171,19 @@ program bem
     INTEGER(int32) :: i,m,n,info
     INTEGER(int32) :: DIV_NUM
     REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:), exact_q(:,:), edge_points(:,:),points(:,:)
+    REAL(real64) :: inner_point(2)
+    REAL(real64) :: result_value
 
     ! 分割サイズを入力
     print *,"input DIV_NUM : "
     READ (*,*) DIV_NUM
     if ( DIV_NUM <= 0 ) return
+    ! 値を求める点を入力
+    inner_point(:) = [0.5d0,0.5d0]
+    if ( dot_product(inner_point(:),inner_point(:)) >= 1.0d0 ) then
+        print *,"your point is out of domain."
+        stop
+    end if  
 
     ! 割り付け
     ALLOCATE(edge_points(DIV_NUM,2))
@@ -189,10 +215,16 @@ program bem
         exact_q(m,1) = exact_u_normal_drv(points(m,:))
     end do
 
+    ! 求めた行列を用いて共役な法線微分（q）を計算.
     call solve(lU,matmul(lW,u),q,info)
     if (info == 0) then
-        print *,"calc  q:",q(:,1)
-        print *,"exact q:",exact_q(:,1)
-        print *,"Err about q :",q(:,1)-exact_q(:,1)
+        print *,"sum of error about q :",sum(q(:,1)-exact_q(:,1))
     endif
+
+    ! 台形公式で内点の値を計算
+    result_value = integral_trapezoidal(inner_point, points, q)
+
+    print *,"at (", inner_point(1),",",inner_point(2),"), result : ",result_value
+    print *,"exact value is ",exact_u(inner_point(:))
+
 end program bem
