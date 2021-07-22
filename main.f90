@@ -235,20 +235,42 @@ program main
     INTEGER(int32) :: DIV_NUM
     REAL(real64) :: inner_point(2)
     REAL(real64) :: result_value
+    REAL(real64),ALLOCATABLE :: result_array(:)
+    REAL(real64),ALLOCATABLE :: inner_points_xy(:)  ! 領域内の点を並べて保存しておくための一次元配列
+    REAL(real64),ALLOCATABLE :: inner_points(:,:)
+    INTEGER(int32) :: i,j,point_num
+
+    inner_points_xy = [REAL(real64) :: ]
+    point_num = 0
+    
+    do i = 1, 11
+        do j = 1, 11
+            ! 順番に点を考え, 領域内に入っていればinner_points_xy配列に追加する. point_numはそのような点の数
+            inner_point(:) = [2.0d0/10.0d0*(j-1), 2.0d0/10.0d0*(i-1)] - [1.0d0, 1.0d0]
+            if (dot_product(inner_point,inner_point) < 1.0d0) then
+                point_num = point_num + 1
+                inner_points_xy = [inner_points_xy, inner_point]
+            endif
+        end do
+    end do
+    ! 列挙し終わったらうまくreshapeして平面の点の配列になるようにする（二次元配列）.
+    inner_points = reshape(inner_points_xy, [point_num,2], order=[2,1])
 
     ! 分割サイズを入力
     print *,"input DIV_NUM : "
     READ (*,*) DIV_NUM
     if ( DIV_NUM <= 0 ) return
-    ! 値を求める点を入力
-    print *,"input two number (divide by space)"
-    READ(*,*) inner_point
-    if ( dot_product(inner_point(:),inner_point(:)) >= 1.0d0 ) then
-        print *,"your point is out of domain."
-        stop
-    end if
+    
     ! todo: メッシュ状に領域内に点を取り, 各点の値を計算してgnuplotでプロット
+    ALLOCATE(result_array(point_num))
+    do i = 1, point_num
+        call bem_calc(DIV_NUM, inner_points(i,:), result_value)
+        ! とりあえず厳密値との差を見る
+        result_array(i) = result_value - exact_u(inner_points(i,:))
+    end do
 
-    call bem_calc(DIV_NUM, inner_point(:), result_value)
+    print *,"sum of error : ", sum(result_array)
+
+    
 
 end program main
