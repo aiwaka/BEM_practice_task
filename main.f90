@@ -169,14 +169,70 @@ contains
 
 end module subprogram
 
-program bem
+module bem
     use,intrinsic :: iso_fortran_env
     use subprogram
     implicit none
+contains
+    subroutine bem_calc(DIV_NUM, inner_point, result_value)
+        implicit none
+        INTEGER(int32),intent(in) :: DIV_NUM
+        REAL(real64),intent(in) :: inner_point(2)
+        REAL(real64),intent(out) :: result_value
+        INTEGER(int32) :: i,m,n,info
+        REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:), exact_q(:,:), edge_points(:,:),points(:,:)
 
-    INTEGER(int32) :: i,m,n,info
+        ! 割り付け
+        ALLOCATE(edge_points(DIV_NUM,2))
+        ALLOCATE(points(DIV_NUM,2))
+        ALLOCATE(lU(DIV_NUM,DIV_NUM))
+        ALLOCATE(lW(DIV_NUM,DIV_NUM))
+        ALLOCATE(q(DIV_NUM,1))
+        ALLOCATE(exact_q(DIV_NUM,1))
+        ALLOCATE(u(DIV_NUM,1))
+
+        ! 円周上の点を用意する. (1,0)から始めて一周する. これは端点で, 代表点はそれぞれの中点とする.
+        do i = 1, DIV_NUM
+            edge_points(i,1) = cos(2.0d0*(i-1)*PI/DIV_NUM)
+            edge_points(i,2) = sin(2.0d0*(i-1)*PI/DIV_NUM)
+        end do
+        ! 代表点
+        do i = 1, DIV_NUM
+            points(i,:) = (edge_points(i,:) + edge_points(modulo(i,DIV_NUM)+1,:))/2.0d0
+        end do
+
+        ! 行列の各要素を計算
+        do m = 1, DIV_NUM
+            do n = 1, DIV_NUM
+                lU(m,n) = U_component(m,n,edge_points)
+                lW(m,n) = W_component(m,n,edge_points)
+            end do
+            u(m,1) = exact_u(points(m,:))
+            ! 確認のため厳密なqも計算する.
+            exact_q(m,1) = exact_u_normal_drv(points(m,:))
+        end do
+
+        ! 求めた行列を用いて共役な法線微分（q）を計算.
+        call solve(lU,matmul(lW,u),q,info)
+        if (info == 0) then
+            print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
+        endif
+
+        ! 台形公式で内点の値を計算
+        result_value = integral_trapezoidal(inner_point, points, q, u)
+
+        print *,"at (", inner_point(1),",",inner_point(2),"), result : ",result_value
+        print *,"exact value is ",exact_u(inner_point(:))," ... error is ",exact_u(inner_point(:))-result_value
+
+    end subroutine bem_calc
+end module bem
+
+program main
+    use,intrinsic :: iso_fortran_env
+    use bem
+    implicit none
+
     INTEGER(int32) :: DIV_NUM
-    REAL(real64),ALLOCATABLE :: lU(:,:), lW(:,:), q(:,:), u(:,:), exact_q(:,:), edge_points(:,:),points(:,:)
     REAL(real64) :: inner_point(2)
     REAL(real64) :: result_value
 
@@ -190,48 +246,8 @@ program bem
     if ( dot_product(inner_point(:),inner_point(:)) >= 1.0d0 ) then
         print *,"your point is out of domain."
         stop
-    end if  
+    end if
 
-    ! 割り付け
-    ALLOCATE(edge_points(DIV_NUM,2))
-    ALLOCATE(points(DIV_NUM,2))
-    ALLOCATE(lU(DIV_NUM,DIV_NUM))
-    ALLOCATE(lW(DIV_NUM,DIV_NUM))
-    ALLOCATE(q(DIV_NUM,1))
-    ALLOCATE(exact_q(DIV_NUM,1))
-    ALLOCATE(u(DIV_NUM,1))
+    call bem_calc(DIV_NUM, inner_point(:), result_value)
 
-    ! 円周上の点を用意する. (1,0)から始めて一周する. これは端点で, 代表点はそれぞれの中点とする.
-    do i = 1, DIV_NUM
-        edge_points(i,1) = cos(2.0d0*(i-1)*PI/DIV_NUM)
-        edge_points(i,2) = sin(2.0d0*(i-1)*PI/DIV_NUM)
-    end do
-    ! 代表点
-    do i = 1, DIV_NUM
-        points(i,:) = (edge_points(i,:) + edge_points(modulo(i,DIV_NUM)+1,:))/2.0d0
-    end do
-
-    ! 行列の各要素を計算
-    do m = 1, DIV_NUM
-        do n = 1, DIV_NUM
-            lU(m,n) = U_component(m,n,edge_points)
-            lW(m,n) = W_component(m,n,edge_points)
-        end do
-        u(m,1) = exact_u(points(m,:))
-        ! 確認のため厳密なqも計算する.
-        exact_q(m,1) = exact_u_normal_drv(points(m,:))
-    end do
-
-    ! 求めた行列を用いて共役な法線微分（q）を計算.
-    call solve(lU,matmul(lW,u),q,info)
-    if (info == 0) then
-        print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
-    endif
-
-    ! 台形公式で内点の値を計算
-    result_value = integral_trapezoidal(inner_point, points, q, u)
-
-    print *,"at (", inner_point(1),",",inner_point(2),"), result : ",result_value
-    print *,"exact value is ",exact_u(inner_point(:))," ... error is ",exact_u(inner_point(:))-result_value
-
-end program bem
+end program main
