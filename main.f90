@@ -233,6 +233,8 @@ program main
     implicit none
 
     INTEGER(int32) :: DIV_NUM
+    INTEGER(int32),PARAMETER :: MESH_DIV_NUM = 40
+    INTEGER(int32),PARAMETER :: fo = 11
     REAL(real64) :: inner_point(2)
     REAL(real64) :: result_value
     REAL(real64),ALLOCATABLE :: result_array(:)
@@ -243,10 +245,10 @@ program main
     inner_points_xy = [REAL(real64) :: ]
     point_num = 0
     
-    do i = 1, 11
-        do j = 1, 11
+    do i = 1, MESH_DIV_NUM+1
+        do j = 1, MESH_DIV_NUM+1
             ! 順番に点を考え, 領域内に入っていればinner_points_xy配列に追加する. point_numはそのような点の数
-            inner_point(:) = [2.0d0/10.0d0*(j-1), 2.0d0/10.0d0*(i-1)] - [1.0d0, 1.0d0]
+            inner_point(:) = [2.0d0/(real(MESH_DIV_NUM,real64))*(j-1), 2.0d0/(real(MESH_DIV_NUM,real64))*(i-1)] - [1.0d0, 1.0d0]
             if (dot_product(inner_point,inner_point) < 1.0d0) then
                 point_num = point_num + 1
                 inner_points_xy = [inner_points_xy, inner_point]
@@ -256,21 +258,29 @@ program main
     ! 列挙し終わったらうまくreshapeして平面の点の配列になるようにする（二次元配列）.
     inner_points = reshape(inner_points_xy, [point_num,2], order=[2,1])
 
-    ! 分割サイズを入力
+    ! 円周の分割サイズを入力（計算精度）
     print *,"input DIV_NUM : "
     READ (*,*) DIV_NUM
     if ( DIV_NUM <= 0 ) return
-    
-    ! todo: メッシュ状に領域内に点を取り, 各点の値を計算してgnuplotでプロット
+
+    ! 結果を保存する配列を用意
     ALLOCATE(result_array(point_num))
     do i = 1, point_num
         call bem_calc(DIV_NUM, inner_points(i,:), result_value)
-        ! とりあえず厳密値との差を見る
-        result_array(i) = result_value - exact_u(inner_points(i,:))
+        ! 厳密値との差を見るか実際の値を見るかいずれか
+        ! result_array(i) = result_value - exact_u(inner_points(i,:))
+        result_array(i) = result_value
     end do
 
     print *,"sum of error : ", sum(result_array)
 
+    open(fo, file='plot.csv')
+    do i = 1, point_num
+        write(fo,'(3e20.7)') inner_points(i,1),inner_points(i,2),result_array(i)
+    end do
+    close(fo)
+    ! なぜかVScodeのexecタスクで実行するとファイルが生成されないのでターミナルから実行する.
+    ! plot.csvができたら, gnuplotを起動し[sp "plot.csv" w p]と入力するとプロットされる.
     
 
 end program main
