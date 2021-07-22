@@ -215,14 +215,14 @@ contains
         ! 求めた行列を用いて共役な法線微分（q）を計算.
         call solve(lU,matmul(lW,u),q,info)
         if (info == 0) then
-            print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
+            ! print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
         endif
 
         ! 台形公式で内点の値を計算
         result_value = integral_trapezoidal(inner_point, points, q, u)
 
-        print *,"at (", inner_point(1),",",inner_point(2),"), result : ",result_value
-        print *,"exact value is ",exact_u(inner_point(:))," ... error is ",exact_u(inner_point(:))-result_value
+        print '("at (" e20.7 "," ,e20.7 "),", "result : " e20.7)', inner_point(1), inner_point(2), result_value
+        ! print *,"exact value is ",exact_u(inner_point(:))," ... error is ",exact_u(inner_point(:))-result_value
 
     end subroutine bem_calc
 end module bem
@@ -247,6 +247,7 @@ program main
         print *,"your point is out of domain."
         stop
     end if
+    ! todo: メッシュ状に領域内に点を取り, 各点の値を計算してgnuplotでプロット
 
     call bem_calc(DIV_NUM, inner_point(:), result_value)
 
