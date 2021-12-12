@@ -51,6 +51,7 @@ contains
         h = 2.0d0*PI/real(points_num,real64)
         do i = 1, points_num
             ! 一重層ポテンシャル
+            ! q_arrayは添字1を書いているが配列の大きさ1なので特に意味はない.
             retval = retval + fund_gamma(x,points(i,:))*q_array(i,1)
             ! 二重層ポテンシャル
             retval = retval - fund_gamma_derivative(x,points(i,:))*u_array(i,1)
@@ -244,7 +245,7 @@ program main
 
     inner_points_xy = [REAL(real64) :: ]
     point_num = 0
-    
+
     do i = 1, MESH_DIV_NUM+1
         do j = 1, MESH_DIV_NUM+1
             ! 順番に点を考え, 領域内に入っていればinner_points_xy配列に追加する. point_numはそのような点の数
@@ -281,6 +282,6 @@ program main
     close(fo)
     ! なぜかVScodeのexecタスクで実行するとファイルが生成されないのでターミナルから実行する.
     ! plot.csvができたら, gnuplotを起動し[sp "plot.csv" w p]と入力するとプロットされる.
-    
+
 
 end program main
