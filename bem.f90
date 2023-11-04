@@ -3,36 +3,36 @@ module bem
   use subprogram
   implicit none
 contains
-  subroutine calc_bem(DIV_NUM, inner_point, result_value)
+  subroutine calc_bem(div_num, inner_point, result_value)
     implicit none
-    integer(int32), intent(in) :: DIV_NUM
+    integer(int32), intent(in) :: div_num
     real(real64), intent(in) :: inner_point(2)
     real(real64), intent(out) :: result_value
     integer(int32) :: i, m, n, info
     real(real64), allocatable :: lU(:, :), lW(:, :), q(:, :), u(:, :), exact_q(:, :), edge_points(:, :), points(:, :)
 
     ! 割り付け
-    allocate (edge_points(DIV_NUM, 2))
-    allocate (points(DIV_NUM, 2))
-    allocate (lU(DIV_NUM, DIV_NUM))
-    allocate (lW(DIV_NUM, DIV_NUM))
-    allocate (q(DIV_NUM, 1))
-    allocate (exact_q(DIV_NUM, 1))
-    allocate (u(DIV_NUM, 1))
+    allocate (edge_points(div_num, 2))
+    allocate (points(div_num, 2))
+    allocate (lU(div_num, div_num))
+    allocate (lW(div_num, div_num))
+    allocate (q(div_num, 1))
+    allocate (exact_q(div_num, 1))
+    allocate (u(div_num, 1))
 
     ! 円周上の点を用意する. (1,0)から始めて一周する. これは端点で, 代表点はそれぞれの中点とする.
-    do i = 1, DIV_NUM
-      edge_points(i, 1) = cos(2.0d0*real(i - 1, real64)*PI/real(DIV_NUM, real64))
-      edge_points(i, 2) = sin(2.0d0*real(i - 1, real64)*PI/real(DIV_NUM, real64))
+    do i = 1, div_num
+      edge_points(i, 1) = cos(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
+      edge_points(i, 2) = sin(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
     end do
     ! 代表点
-    do i = 1, DIV_NUM
-      points(i, :) = (edge_points(i, :) + edge_points(modulo(i, DIV_NUM) + 1, :))/2.0d0
+    do i = 1, div_num
+      points(i, :) = (edge_points(i, :) + edge_points(modulo(i, div_num) + 1, :))/2.0d0
     end do
 
     ! 行列の各要素を計算
-    do m = 1, DIV_NUM
-      do n = 1, DIV_NUM
+    do m = 1, div_num
+      do n = 1, div_num
         lU(m, n) = U_component(m, n, edge_points)
         lW(m, n) = W_component(m, n, edge_points)
       end do
