@@ -5,8 +5,8 @@ program main
   implicit none
 
   integer(int32) :: div_num
-  integer(int32), PARAMETER :: MESH_div_num = 40
-  integer(int32), PARAMETER :: fo = 11
+  integer(int32), parameter :: MESH_DIV_NUM = 40
+  integer(int32), parameter :: fo = 11
   real(real64) :: inner_point(2)
   real(real64) :: result_value
   real(real64), allocatable :: result_array(:)
@@ -19,10 +19,10 @@ program main
   inner_points_xy = [real(real64) ::]
   point_num = 0
 
-  do i = 1, MESH_div_num + 1
-    do j = 1, MESH_div_num + 1
+  do i = 1, MESH_DIV_NUM + 1
+    do j = 1, MESH_DIV_NUM + 1
       ! 順番に点を考え, 領域内に入っていればinner_points_xy配列に追加する. point_numはそのような点の数
-      inner_point(:) = [2.0d0/(real(MESH_div_num, real64))*(j - 1), 2.0d0/(real(MESH_div_num, real64))*(i - 1)] - [1.0d0, 1.0d0]
+      inner_point(:) = [2.0d0/(real(MESH_DIV_NUM, real64))*(j - 1), 2.0d0/(real(MESH_DIV_NUM, real64))*(i - 1)] - [1.0d0, 1.0d0]
       if (dot_product(inner_point, inner_point) < 1.0d0) then
         point_num = point_num + 1
         inner_points_xy = [inner_points_xy, inner_point]

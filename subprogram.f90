@@ -14,7 +14,7 @@ contains
     !> 解を保存するベクトル
     real(real64), allocatable, intent(inout) :: x(:, :)
     !> 計算結果ステータスを保存する
-    integer(int32), intent(out) :: info
+    integer(int32), intent(inout) :: info
 
     integer(int32), allocatable :: ipiv(:)
     integer(int32) :: an, am, bn, bm
@@ -37,8 +37,8 @@ contains
     call dgesv(an, bm, A, an, ipiv, x, bn, info)  ! lapackのサブルーチンを呼び出して解く.
     if (info /= 0) then
       ! infoが0でなければbad statusなのでその旨を表示する
-      WRITE (*, *) 'Error : solve : info=', info
-      RETURN
+      print *, 'Error : solve : info=', info
+      return
     end if
   end subroutine
 
@@ -116,13 +116,13 @@ contains
     retval = dot_product(x - y, [cos(theta), sin(theta)])/2.0d0/PI/dot_product(x - y, x - y)
   end function fund_gamma_derivative
 
-  subroutine component_values(m, n, edge_points, lX1, lX2, lY1, lY2, r1, r2, h, theta)
+  subroutine component_values(m, n, edge_points, capital_x1, capital_x2, capital_y1, capital_y2, r1, r2, h, theta)
     !! 小林本の表記に従った諸量を計算する.
     implicit none
 
     integer(int32), intent(in) :: m, n
     real(real64), intent(in) :: edge_points(:, :)
-    real(real64), intent(out) :: lX1, lX2, lY1, lY2, r1, r2, h, theta
+    real(real64), intent(inout) :: capital_x1, capital_x2, capital_y1, capital_y2, r1, r2, h, theta
     integer(int32) :: points_num
     real(real64) :: x(2), x1(2), x2(2)
     real(real64) :: t_vec(2), n_vec(2)
@@ -143,13 +143,13 @@ contains
     t_vec(:) = [(x2(1) - x1(1))/h, (x2(2) - x1(2))/h]
     n_vec(:) = [(x1(2) - x2(2))/h, (x2(1) - x1(1))/h]
 
-    lX1 = dot_product(x - x1, t_vec)
-    lX2 = dot_product(x - x2, t_vec)
+    capital_x1 = dot_product(x - x1, t_vec)
+    capital_x2 = dot_product(x - x2, t_vec)
     r1 = sqrt(dot_product(x - x1, x - x1))
     r2 = sqrt(dot_product(x - x2, x - x2))
-    lY1 = dot_product(x - x1, n_vec)
-    lY2 = dot_product(x - x2, n_vec)
-    theta = atan2(lY2, lX2) - atan2(lY1, lX1)
+    capital_y1 = dot_product(x - x1, n_vec)
+    capital_y2 = dot_product(x - x2, n_vec)
+    theta = atan2(capital_y2, capital_x2) - atan2(capital_y1, capital_x1)
   end subroutine component_values
 
   function U_component(m, n, edge_points) result(retval)
@@ -158,16 +158,16 @@ contains
     integer(int32) :: m, n
     real(real64) :: edge_points(:, :)
     real(real64) :: retval
-    real(real64) :: lX1, lX2, lY1, lY2, r1, r2, h, theta
+    real(real64) :: capital_x1, capital_x2, capital_y1, capital_y2, r1, r2, h, theta
 
-    call component_values(m, n, edge_points, lX1, lX2, lY1, lY2, r1, r2, h, theta)
+    call component_values(m, n, edge_points, capital_x1, capital_x2, capital_y1, capital_y2, r1, r2, h, theta)
     if (m == n) then
       ! m=nの場合は例外的な計算
       retval = (1 - log(h/2.0d0))*h/2.0d0/PI
       return
     end if
 
-    retval = (lX2*log(r2) - lX1*log(r1) + h - lY1*theta)/2.0d0/PI
+    retval = (capital_x2*log(r2) - capital_x1*log(r1) + h - capital_y1*theta)/2.0d0/PI
   end function U_component
 
   function W_component(m, n, edge_points) result(retval)
@@ -176,13 +176,13 @@ contains
     integer(int32) :: m, n
     real(real64) :: edge_points(:, :)
     real(real64) :: retval
-    real(real64) :: lX1, lX2, lY1, lY2, r1, r2, h, theta
+    real(real64) :: capital_x1, capital_x2, capital_y1, capital_y2, r1, r2, h, theta
 
     if (m == n) then
       retval = 0.5d0
       return
     end if
-    call component_values(m, n, edge_points, lX1, lX2, lY1, lY2, r1, r2, h, theta)
+    call component_values(m, n, edge_points, capital_x1, capital_x2, capital_y1, capital_y2, r1, r2, h, theta)
 
     retval = theta/2.0d0/PI
   end function W_component

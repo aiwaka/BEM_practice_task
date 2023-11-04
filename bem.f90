@@ -15,9 +15,9 @@ contains
 
     integer(int32) :: i, m, n, info
     !> 小林本のUの値を並べる行列
-    real(real64), allocatable :: lU(:, :)
+    real(real64), allocatable :: capital_u_mat(:, :)
     !> 小林本のWの値を並べる行列
-    real(real64), allocatable :: lW(:, :)
+    real(real64), allocatable :: capital_w_mat(:, :)
     !> 境界上の法線微分の値を並べる行列
     real(real64), allocatable :: q(:, :)
     !> 境界上の値を並べる行列
@@ -31,8 +31,8 @@ contains
 
     allocate (edge_points(div_num, 2))
     allocate (points(div_num, 2))
-    allocate (lU(div_num, div_num))
-    allocate (lW(div_num, div_num))
+    allocate (capital_u_mat(div_num, div_num))
+    allocate (capital_w_mat(div_num, div_num))
     allocate (q(div_num, 1))
     allocate (exact_q(div_num, 1))
     allocate (u(div_num, 1))
@@ -50,8 +50,8 @@ contains
     ! 行列の各要素を計算
     do m = 1, div_num
       do n = 1, div_num
-        lU(m, n) = U_component(m, n, edge_points)
-        lW(m, n) = W_component(m, n, edge_points)
+        capital_u_mat(m, n) = U_component(m, n, edge_points)
+        capital_w_mat(m, n) = W_component(m, n, edge_points)
       end do
       u(m, 1) = exact_u(points(m, :))
       ! 確認のため厳密なqも計算する.
@@ -59,7 +59,7 @@ contains
     end do
 
     ! 求めた行列を用いて共役な法線微分：qを計算.
-    call solve(lU, matmul(lW, u), q, info)
+    call solve(capital_u_mat, matmul(capital_w_mat, u), q, info)
     ! if (info == 0) then
     !   print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
     ! end if
