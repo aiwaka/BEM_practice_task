@@ -1,0 +1,1 @@
+sp "plot.dat" w p
