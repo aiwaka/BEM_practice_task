@@ -5,10 +5,17 @@ module subprogram
 
 contains
   subroutine solve(A, b, x, info)
-    ! Ax=bの方程式を解き, xに結果を代入し, infoにステータスを保存する.
-    real(real64), INTENT(IN) :: A(:, :), b(:, :)
-    real(real64), allocatable, INTENT(INOUT) :: x(:, :)
-    integer(int32), INTENT(OUT) :: info
+    !! Ax=bの方程式を解き, xに結果を代入し, infoにステータスを保存する.
+
+    !> 係数行列
+    real(real64), intent(in) :: A(:, :)
+    !> 定数ベクトル
+    real(real64), intent(in) :: b(:, :)
+    !> 解を保存するベクトル
+    real(real64), allocatable, intent(inout) :: x(:, :)
+    !> 計算結果ステータスを保存する
+    integer(int32), intent(out) :: info
+
     integer(int32), allocatable :: ipiv(:)
     integer(int32) :: an, am, bn, bm
     ! Aが正方であるかチェック
@@ -36,13 +43,24 @@ contains
   end subroutine
 
   function integral_trapezoidal(x, points, q_array, u_array) result(retval)
-    ! 台形公式を用いて周回積分を行う.
-    ! 添字1とN+1の点が一致していることを利用して,
-    ! すべての点を一回ずつ足してh/2をかける代わりにhをかけることにする.
+    !! 台形公式を用いて周回積分を行う.
+    !! 添字1とN+1の点が一致していることを利用して,
+    !! すべての点を一回ずつ足してh/2をかける代わりにhをかけることにする.
+
     implicit none
-    real(real64) :: x(2), points(:, :), q_array(:, :), u_array(:, :)
-    real(real64) :: h
+
+    !> 計算する内点座標
+    real(real64) :: x(2)
+    !> 点列. index: (point, axis)
+    real(real64) :: points(:, :)
+    !> 境界上の法線微分の値の列. index: (point, [1])
+    real(real64) :: q_array(:, :)
+    !> 境界上の値の列. index: (point, [1])
+    real(real64) :: u_array(:, :)
+
     real(real64) :: retval
+
+    real(real64) :: h
     integer(int32) :: points_num, i
 
     retval = 0.0d0
@@ -59,7 +77,7 @@ contains
   end function integral_trapezoidal
 
   function exact_u(x) result(retval)
-    ! 与えられた点に対してx^3 - 3xy^2の厳密な値を計算する.
+    !! 与えられた点に対して関数x^3 - 3xy^2の厳密な値を計算する.
     implicit none
     real(real64) :: x(2)
     real(real64) :: retval
@@ -68,8 +86,8 @@ contains
   end function exact_u
 
   function exact_u_normal_drv(x) result(retval)
-    ! 半径1の単位円の領域とする.
-    ! 与えられた点に対してx^3-3xy^2の法線微分を計算する.
+    !! 与えられた境界上の点に対して関数x^3-3xy^2の法線微分を計算する.
+    !! 境界は半径1の単位円とする.
     implicit none
     real(real64) :: x(2)
     real(real64) :: retval
@@ -80,7 +98,7 @@ contains
   end function exact_u_normal_drv
 
   function fund_gamma(x, y) result(retval)
-    ! 任意の二点に対する（二次元）基本解の値を返す.
+    !! 任意の二点に対する（二次元）基本解の値を返す.
     implicit none
     real(real64) :: x(2), y(2)
     real(real64) :: retval
@@ -89,7 +107,7 @@ contains
   end function fund_gamma
 
   function fund_gamma_derivative(x, y) result(retval)
-    ! 任意の二点（ただしyは境界上）に対する基本解のyについての法線微分を返す.
+    !! 任意の二点（ただしyは境界上）に対する基本解のyについての法線微分を返す.
     implicit none
     real(real64) :: x(2), y(2), theta
     real(real64) :: retval
@@ -99,7 +117,9 @@ contains
   end function fund_gamma_derivative
 
   subroutine component_values(m, n, edge_points, lX1, lX2, lY1, lY2, r1, r2, h, theta)
+    !! 小林本の表記に従った諸量を計算する.
     implicit none
+
     integer(int32), intent(in) :: m, n
     real(real64), intent(in) :: edge_points(:, :)
     real(real64), intent(out) :: lX1, lX2, lY1, lY2, r1, r2, h, theta
@@ -133,7 +153,7 @@ contains
   end subroutine component_values
 
   function U_component(m, n, edge_points) result(retval)
-    ! 任意の点xと区間端点x1,x2を入力すると基本解の値を返す
+    !! 離散化された一重層ポテンシャルの行列の要素の値を返す
     implicit none
     integer(int32) :: m, n
     real(real64) :: edge_points(:, :)
@@ -151,7 +171,7 @@ contains
   end function U_component
 
   function W_component(m, n, edge_points) result(retval)
-    ! 基本解の法線微分の値を計算する.
+    !! 離散化された二重層ポテンシャルの行列の要素の値を返す
     implicit none
     integer(int32) :: m, n
     real(real64) :: edge_points(:, :)

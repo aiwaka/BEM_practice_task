@@ -4,14 +4,31 @@ module bem
   implicit none
 contains
   subroutine calc_bem(div_num, inner_point, result_value)
+    !! 境界要素法の計算を行う
     implicit none
+    !> 円周の分割数（境界要素数, 点の数）
     integer(int32), intent(in) :: div_num
+    !> 空間内点の座標
     real(real64), intent(in) :: inner_point(2)
-    real(real64), intent(out) :: result_value
-    integer(int32) :: i, m, n, info
-    real(real64), allocatable :: lU(:, :), lW(:, :), q(:, :), u(:, :), exact_q(:, :), edge_points(:, :), points(:, :)
+    !> 結果の値
+    real(real64), intent(inout) :: result_value
 
-    ! 割り付け
+    integer(int32) :: i, m, n, info
+    !> 小林本のUの値を並べる行列
+    real(real64), allocatable :: lU(:, :)
+    !> 小林本のWの値を並べる行列
+    real(real64), allocatable :: lW(:, :)
+    !> 境界上の法線微分の値を並べる行列
+    real(real64), allocatable :: q(:, :)
+    !> 境界上の値を並べる行列
+    real(real64), allocatable :: u(:, :)
+    !> 解析的な解と比べるための厳密な値
+    real(real64), allocatable :: exact_q(:, :)
+    !> 円周上の点列. 端点であり, 代表点（`points`）はそれぞれの要素の中点.
+    real(real64), allocatable :: edge_points(:, :)
+    !> 要素を表す点列
+    real(real64), allocatable :: points(:, :)
+
     allocate (edge_points(div_num, 2))
     allocate (points(div_num, 2))
     allocate (lU(div_num, div_num))
@@ -20,7 +37,7 @@ contains
     allocate (exact_q(div_num, 1))
     allocate (u(div_num, 1))
 
-    ! 円周上の点を用意する. (1,0)から始めて一周する. これは端点で, 代表点はそれぞれの中点とする.
+    ! 円周上の点を用意する. (1,0)から始めて一周する.
     do i = 1, div_num
       edge_points(i, 1) = cos(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
       edge_points(i, 2) = sin(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
@@ -41,17 +58,16 @@ contains
       exact_q(m, 1) = exact_u_normal_drv(points(m, :))
     end do
 
-    ! 求めた行列を用いて共役な法線微分（q）を計算.
+    ! 求めた行列を用いて共役な法線微分：qを計算.
     call solve(lU, matmul(lW, u), q, info)
-    if (info == 0) then
-      ! print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
-    end if
+    ! if (info == 0) then
+    !   print *,"sum of error about q :",dot_product(q(:,1)-exact_q(:,1), q(:,1)-exact_q(:,1))
+    ! end if
 
     ! 台形公式で内点の値を計算
     result_value = integral_trapezoidal(inner_point, points, q, u)
 
-    print '("at (" e20.7 "," ,e20.7 "),", "result : " e20.7)', inner_point(1), inner_point(2), result_value
-    ! print *,"exact value is ",exact_u(inner_point(:))," ... error is ",exact_u(inner_point(:))-result_value
+    print '("at point [" e20.7 "," ,e20.7 " ],", " result : " e20.7)', inner_point(1), inner_point(2), result_value
 
   end subroutine calc_bem
 end module bem
