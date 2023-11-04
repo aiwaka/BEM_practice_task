@@ -13,6 +13,8 @@ program main
   real(real64), allocatable :: inner_points_xy(:)  ! 領域内の点を並べて保存しておくための一次元配列
   real(real64), allocatable :: inner_points(:, :)
   integer(int32) :: i, j, point_num
+  ! CPU時間計測用
+  integer(int32)   :: begin_time, end_time, time_count_per_sec, time_count_max
 
   inner_points_xy = [real(real64) ::]
   point_num = 0
@@ -33,8 +35,10 @@ program main
   ! 円周の分割サイズを入力（計算精度）
   print *, "input div_num : "
   READ (*, *) div_num
-  if (div_num <= 0) return
+  if (div_num <= 0) stop
 
+  print *, "start to measure time"
+  call system_clock(begin_time, time_count_per_sec, time_count_max)
   ! 結果を保存する配列を用意
   allocate (result_array(point_num))
   do i = 1, point_num
@@ -45,6 +49,8 @@ program main
   end do
 
   print *, "sum of error : ", sum(result_array)
+  call system_clock(end_time)
+  print *, "time measurement end. elapsed time: ", real(end_time - begin_time)/time_count_per_sec, "sec"
 
   open (fo, file='plot.dat')
   do i = 1, point_num
