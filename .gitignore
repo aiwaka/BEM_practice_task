@@ -7,5 +7,6 @@
 *.png
 *.jpg
 *.out
+*.o
 
 !.mod/
