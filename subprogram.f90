@@ -51,7 +51,7 @@ contains
 
     !> 計算する内点座標
     real(real64) :: x(2)
-    !> 点列. index: (point, axis)
+    !> 点列. index: (axis, point)
     real(real64) :: points(:, :)
     !> 境界上の法線微分の値の列. index: (point, [1])
     real(real64) :: q_array(:, :)
@@ -64,14 +64,14 @@ contains
     integer(int32) :: points_num, i
 
     retval = 0.0d0
-    points_num = size(points, 1)
+    points_num = size(points, 2)
     h = 2.0d0*PI/real(points_num, real64)
     do i = 1, points_num
       ! 一重層ポテンシャル
       ! q_arrayは添字1を書いているが配列の大きさ1なので特に意味はない.
-      retval = retval + fund_gamma(x, points(i, :))*q_array(i, 1)
+      retval = retval + fund_gamma(x, points(:, i))*q_array(i, 1)
       ! 二重層ポテンシャル
-      retval = retval - fund_gamma_derivative(x, points(i, :))*u_array(i, 1)
+      retval = retval - fund_gamma_derivative(x, points(:, i))*u_array(i, 1)
     end do
     retval = retval*h
   end function integral_trapezoidal
@@ -128,14 +128,14 @@ contains
     real(real64) :: t_vec(2), n_vec(2)
 
     ! pointsのサイズを保存
-    points_num = size(edge_points, 1)
+    points_num = size(edge_points, 2)
 
     ! moduloを用いて周期的に添え字を扱って配列外参照が起きないようにする
     ! m番目の区間の中点
-    x(:) = (edge_points(modulo(m - 1, points_num) + 1, :) + edge_points(modulo(m, points_num) + 1, :))/2.0d0
+    x(:) = (edge_points(:, modulo(m - 1, points_num) + 1) + edge_points(:, modulo(m, points_num) + 1))/2.0d0
     ! n番目の区間の端点
-    x1(:) = edge_points(modulo(n - 1, points_num) + 1, :)
-    x2(:) = edge_points(modulo(n, points_num) + 1, :)
+    x1(:) = edge_points(:, modulo(n - 1, points_num) + 1)
+    x2(:) = edge_points(:, modulo(n, points_num) + 1)
 
     ! 概ね小林本の表式に合わせ, XやYを導入している.
     h = sqrt(dot_product(x1 - x2, x1 - x2))  ! 区間の長さ

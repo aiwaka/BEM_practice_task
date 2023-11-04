@@ -15,6 +15,7 @@ program main
   ! CPU時間計測用
   integer(int32)   :: begin_time, end_time, time_count_per_sec, time_count_max
 
+  ! real(real64)の空の配列を作成する
   inner_points_xy = [real(real64) ::]
   point_num = 0
 
@@ -24,12 +25,14 @@ program main
       inner_point(:) = [2.0d0/(real(MESH_DIV_NUM, real64))*(j - 1), 2.0d0/(real(MESH_DIV_NUM, real64))*(i - 1)] - [1.0d0, 1.0d0]
       if (dot_product(inner_point, inner_point) < 1.0d0) then
         point_num = point_num + 1
+        ! * 自動再割付を使って要素を増やしている. 直接2ランクを増やすpythonのようなことはできないためあとでreshapeする.
         inner_points_xy = [inner_points_xy, inner_point]
       end if
     end do
   end do
   ! 列挙し終わったらうまくreshapeして平面の点の配列になるようにする（二次元配列）.
-  inner_points = reshape(inner_points_xy, [point_num, 2], order=[2, 1])
+  ! ここでも自動再割付を使っている.
+  inner_points = reshape(inner_points_xy, [2, point_num])
 
   ! 円周の分割サイズを入力（計算精度）
   print *, "input div_num : "
@@ -42,7 +45,7 @@ program main
   ! 結果を保存する配列を用意
   allocate (result_array(point_num))
   do i = 1, point_num
-    call calc_bem(div_num, inner_points(i, :), result_value)
+    call calc_bem(div_num, inner_points(:, i), result_value)
     ! 厳密値との差を見るか実際の値を見るかいずれか
     ! result_array(i) = result_value - exact_u(inner_points(i,:))
     result_array(i) = result_value
@@ -57,7 +60,7 @@ program main
 
     open (newunit=unit_num, file='plot.dat', status="replace")
     do i = 1, point_num
-      write (unit_num, '(3e20.7)') inner_points(i, 1), inner_points(i, 2), result_array(i)
+      write (unit_num, '(3e20.7)') inner_points(1, i), inner_points(2, i), result_array(i)
     end do
     close (unit_num)
   end block

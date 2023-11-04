@@ -29,8 +29,8 @@ contains
     !> 要素を表す点列
     real(real64), allocatable :: points(:, :)
 
-    allocate (edge_points(div_num, 2))
-    allocate (points(div_num, 2))
+    allocate (edge_points(2, div_num))
+    allocate (points(2, div_num))
     allocate (capital_u_mat(div_num, div_num))
     allocate (capital_w_mat(div_num, div_num))
     allocate (q(div_num, 1))
@@ -39,23 +39,23 @@ contains
 
     ! 円周上の点を用意する. (1,0)から始めて一周する.
     do i = 1, div_num
-      edge_points(i, 1) = cos(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
-      edge_points(i, 2) = sin(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
+      edge_points(1, i) = cos(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
+      edge_points(2, i) = sin(2.0d0*real(i - 1, real64)*PI/real(div_num, real64))
     end do
     ! 代表点
     do i = 1, div_num
-      points(i, :) = (edge_points(i, :) + edge_points(modulo(i, div_num) + 1, :))/2.0d0
+      points(:, i) = (edge_points(:, i) + edge_points(:, modulo(i, div_num) + 1))/2.0d0
     end do
 
     ! 行列の各要素を計算
     do m = 1, div_num
       do n = 1, div_num
-        capital_u_mat(m, n) = U_component(m, n, edge_points)
-        capital_w_mat(m, n) = W_component(m, n, edge_points)
+        capital_u_mat(n, m) = U_component(n, m, edge_points)
+        capital_w_mat(n, m) = W_component(n, m, edge_points)
       end do
-      u(m, 1) = exact_u(points(m, :))
+      u(m, 1) = exact_u(points(:, m))
       ! 確認のため厳密なqも計算する.
-      exact_q(m, 1) = exact_u_normal_drv(points(m, :))
+      exact_q(m, 1) = exact_u_normal_drv(points(:, m))
     end do
 
     ! 求めた行列を用いて共役な法線微分：qを計算.
