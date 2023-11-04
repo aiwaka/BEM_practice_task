@@ -6,7 +6,6 @@ program main
 
   integer(int32) :: div_num
   integer(int32), parameter :: MESH_DIV_NUM = 40
-  integer(int32), parameter :: fo = 11
   real(real64) :: inner_point(2)
   real(real64) :: result_value
   real(real64), allocatable :: result_array(:)
@@ -39,6 +38,7 @@ program main
 
   print *, "start to measure time"
   call system_clock(begin_time, time_count_per_sec, time_count_max)
+
   ! 結果を保存する配列を用意
   allocate (result_array(point_num))
   do i = 1, point_num
@@ -52,12 +52,14 @@ program main
   call system_clock(end_time)
   print *, "time measurement end. elapsed time: ", real(end_time - begin_time)/time_count_per_sec, "sec"
 
-  open (fo, file='plot.dat')
-  do i = 1, point_num
-    write (fo, '(3e20.7)') inner_points(i, 1), inner_points(i, 2), result_array(i)
-  end do
-  close (fo)
-  ! なぜかVScodeのexecタスクで実行するとファイルが生成されないのでターミナルから実行する.
-  ! plot.datができたら, gnuplotを起動し[sp "plot.dat" w p]と入力するとプロットされる.
+  block
+    integer(int32) :: unit_num
+
+    open (newunit=unit_num, file='plot.dat', status="replace")
+    do i = 1, point_num
+      write (unit_num, '(3e20.7)') inner_points(i, 1), inner_points(i, 2), result_array(i)
+    end do
+    close (unit_num)
+  end block
 
 end program main
