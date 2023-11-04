@@ -58,7 +58,7 @@ program main
   block
     integer(int32) :: unit_num
 
-    open (newunit=unit_num, file='plot.dat', status="replace")
+    open (newunit=unit_num, file="plot.dat", status="replace")
     do i = 1, point_num
       write (unit_num, '(3e20.7)') inner_points(1, i), inner_points(2, i), result_array(i)
     end do

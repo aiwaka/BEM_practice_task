@@ -22,7 +22,7 @@ contains
     an = size(A, 1)
     am = size(A, 2)
     if (an /= am) then
-      print *, 'Error : solve (an not equal to am) : an=', an, ", am=", am
+      print *, "Error : solve (an not equal to am) : an=", an, ", am=", am
       return
     end if
     ! 基本的にbmは1であることを想定する.
@@ -37,7 +37,7 @@ contains
     call dgesv(an, bm, A, an, ipiv, x, bn, info)  ! lapackのサブルーチンを呼び出して解く.
     if (info /= 0) then
       ! infoが0でなければbad statusなのでその旨を表示する
-      print *, 'Error : solve : info=', info
+      print *, "Error : solve : info=", info
       return
     end if
   end subroutine
