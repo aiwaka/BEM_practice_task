@@ -1,5 +1,6 @@
 FC = $${FORTRAN_FC}
 MATH_LIB = $${FORTRAN_MATH_LIB}
+MATH_LIB_DIR = $${FORTRAN_MATH_LIB_DIR}
 OPENMP = $${FORTRAN_OPENMP}
 OPTIMIZE=-O3
 
@@ -12,7 +13,7 @@ subprogram.o\
 bem.o
 
 main : $(OBJS) main.o
-	$(FC) $(OPTIMIZE) -o main.out $(OBJS) main.o $(MATH_LIB)
+	$(FC) $(OPTIMIZE) -o main.out $(OBJS) main.o $(MATH_LIB_DIR) $(MATH_LIB)
 
 main.o : $(SOURCE_DIR)/main.f90
 	$(FC) -c $(OPTIMIZE) $(SOURCE_DIR)/main.f90
@@ -30,7 +31,7 @@ clean :
 	rm  *.o *.mod *.smod main.out $(SUB_UTILS_DIR)/*.o $(SUB_UTILS_DIR)/*.out
 
 test: test/test.f90 $(OBJS)
-	$(FC) $(OPTIMIZE) -o ./test/test.out $(OBJS) ./test/test.f90 $(MATH_LIB)
+	$(FC) $(OPTIMIZE) -o ./test/test.out $(OBJS) ./test/test.f90 $(MATH_LIB_DIR) $(MATH_LIB)
 	time ./test/test.out
 
 # openmpのスレッド数環境変数がセットされているか確認する.

@@ -4,5 +4,7 @@ export FORTRAN_FC=gfortran
 export FORTRAN_OPENMP=-fopenmp
 # "-mkl"または"-llapack -lblas"
 export FORTRAN_MATH_LIB="-llapack -lblas"
+# Homebrewで入れるとここになる（が、なぜかこちらの方が遅いので空白にしたほうがいいかもしれない）
+export FORTRAN_MATH_LIB_DIR="-L/opt/homebrew/opt/lapack/lib"
 # PCのコア数を超えないようにする（大体の場合4でよい）
 export OMP_NUM_THREADS=8
