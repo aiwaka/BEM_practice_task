@@ -1,0 +1,8 @@
+# gfortranまたはifort
+export FORTRAN_FC=gfortran
+# gfortranでは-fopenmp, ifortでは-qopenmp
+export FORTRAN_OPENMP=-fopenmp
+# "-mkl"または"-llapack -lblas"
+export FORTRAN_MATH_LIB="-llapack -lblas"
+# PCのコア数を超えないようにする（大体の場合4でよい）
+export OMP_NUM_THREADS=8
